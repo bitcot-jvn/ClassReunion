@@ -7,111 +7,173 @@
 
 import UIKit
 
-class HomeVC: BaseViewController {
-    
+class HomeVC: BaseViewController, UISearchBarDelegate {
+
     //MARK: Outlets
     @IBOutlet weak var colList: UICollectionView!
-    @IBOutlet weak var colListHeight: NSLayoutConstraint!
-    @IBOutlet weak var btnAll: UIButton!
-    @IBOutlet weak var btnFavourites: UIButton!
     
-    
-    var arrData: [String] = []{
+    //MARK: Variables
+    var arrData = [classMateModal](){
         didSet{
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                self.colListHeight.constant = self.colList.collectionViewLayout.collectionViewContentSize.height
+            DispatchQueue.main.async {
                 self.colList.reloadData()
             }
-//            colList.addObserver(self, forKeyPath: "contentSize", options: .new, context: nil)
         }
     }
+    var arrTemp = [classMateModal]()
+    var arrFilter = [classMateModal]()
+    var sortDefault: String?
+    var isSelectedAll = true
+    var search: UISearchController! = nil
+    var resultsTableViewController: SearchVC!
+    var searchTextFild = UITextField()
     
     //MARK: default function
     override func viewDidLoad() {
         super.viewDidLoad()
+        self.sortDefault = sortBy.Defaultdown.getOption()
+        self.setUpSearch()
+        self.arrData = DataHelper.shared.setdata
+        self.arrTemp = DataHelper.shared.setdata
+    }
+    
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        self.view.backgroundColor = #colorLiteral(red: 0.8274509804, green: 0.6156862745, blue: 0.2823529412, alpha: 1)
+        self.configureUI()
+    }
+    
+    
+    //MARK: Function
+    fileprivate func configureUI() {
+        self.setupSideMenu()
+        self.navigationController?.navigationBar.isTranslucent = true
         self.navigationItem.title = "Classmates"
         self.navigationLargePreferStyle(true)
         self.showNavigationBar()
         self.setRightAndLeftBarButton(leftButton: true, rightButton: true)
-        self.arrData = ["dsds","dsdsds","dsds","dsdsds","dsds","dsdsds","dsds","dsdsds","dsds","dsdsds","dsds","dsdsds","dsds","dsdsds",]
+        let right = UIBarButtonItem(image: #imageLiteral(resourceName: "filter"), style: .done, target: self, action: #selector(rightBarAction))
+        self.navigationItem.rightBarButtonItem = right
+        
         
     }
     
-//    override func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey : Any]?, context: UnsafeMutableRawPointer?) {
-//        if(keyPath == "contentSize"){
-//            if let newvalue = change?[.newKey]
-//            {
-//                let newsize  = newvalue as! CGSize
-//                colListHeight.constant = newsize.height
-//                colList.reloadData()
-//            }
-//        }
-//    }
-//
-//    deinit {
-//        removeObserver(self, forKeyPath: "contentSize")
-//    }
-    //MARK: default function
-    @IBAction func btnActions(_ sender: UIButton){
-        sender.backgroundColor = #colorLiteral(red: 1.0, green: 1.0, blue: 1.0, alpha: 1.0)
-        sender.setTitleColor(#colorLiteral(red: 0.8274509804, green: 0.6156862745, blue: 0.2823529412, alpha: 1), for: .normal)
-        switch sender {
-        case btnAll:
-            self.btnFavourites.backgroundColor = .clear
-            self.btnFavourites.setTitleColor(#colorLiteral(red: 1.0, green: 1.0, blue: 1.0, alpha: 1.0), for: .normal)
-            break
-        case btnFavourites:
-            self.btnAll.backgroundColor = .clear
-            self.btnAll.setTitleColor(#colorLiteral(red: 1.0, green: 1.0, blue: 1.0, alpha: 1.0), for: .normal)
-            break
-        default:
-            break
+    @objc func rightBarAction(){
+        let vc = MainClass.main.instantiateViewController(withIdentifier: ViewControllers.SortVC.getController()) as! SortVC
+        vc.delegate = self
+        vc.selectedActionIs = self.sortDefault
+        self.present(vc, animated: true)
+    }
+    
+func setUpSearch(){
+    resultsTableViewController = MainClass.Home.instantiateViewController(withIdentifier: "SearchVC") as? SearchVC
+    self.search = UISearchController(searchResultsController: resultsTableViewController )
+    searchTextFild = (self.search.searchBar.value(forKey: "searchField") as? UITextField)!
+    search.searchBar.delegate = self
+    search.searchBar.placeholder = "Search"
+    search.searchBar.showsScopeBar = true
+    self.search.searchBar.sizeToFit()
+    searchTextFild.returnKeyType = .done
+    search.searchBar.scopeButtonTitles = ["ALL", "FAVOURITES"]
+    definesPresentationContext = true
+    search.searchBar.setScopeBarButtonTitleTextAttributes([NSAttributedString.Key.foregroundColor: UIColor.white ], for: UIControl.State.normal)
+    search.searchBar.setScopeBarButtonTitleTextAttributes([NSAttributedString.Key.foregroundColor: UIColor(red: 211/255.0, green: 157/255.0, blue: 72/255.0, alpha: 1.0) ], for: .selected)
+    search.obscuresBackgroundDuringPresentation = true
+    search.hidesNavigationBarDuringPresentation = true
+    search.searchBar.setMagnifyingGlassColorTo(color: .white)
+    self.navigationItem.searchController = search
+    search.searchResultsUpdater = self
+    self.navigationItem.hidesSearchBarWhenScrolling = false
+}
+    
+}
+
+//MARK: Delegates
+extension HomeVC: SelectReason, UIScrollViewDelegate, UISearchResultsUpdating{
+    
+    func updateSearchResults(for searchController: UISearchController) {
+        guard  let text = searchController.searchBar.text else {
+            return
+        }
+        searchController.searchBar.searchTextField.textColor = .white
+        //
+       let vc =  searchController.searchResultsController as? SearchVC
+        vc?.arrFilterData = arrTemp.filter({(value) -> Bool in
+            return value.name!.range(of: text, options: .caseInsensitive) != nil
+        })
+        
+        //Clouser for redirection from serchcontorller , update favourite list
+        vc?.complitionHandler = { (filterData, isfavourite) in
+            if isfavourite{
+                //remove and add newdata from search controller for favourites
+                if let index = self.arrData.firstIndex(where: { $0.id == filterData.id }) {
+                    self.arrData.remove(at: index)
+                    self.arrData.insert(filterData, at: index)
+                    self.arrTemp = self.arrData
+                }
+            }else{//redirection from SearchViewController
+                let vc = MainClass.Classmates.instantiateViewController(withIdentifier: ViewControllers.ClassMateDetailVC.getController()) as! ClassMateDetailVC
+                vc.data = filterData
+                self.navigationController?.pushViewController(vc, animated: false)
+            }
+        }
+    }
+
+    func searchBarShouldBeginEditing(_ searchBar: UISearchBar) -> Bool {
+        search.searchBar.showsScopeBar = false
+        self.search.searchBar.sizeToFit()
+        return true
+    }
+    
+    func searchBarTextDidEndEditing(_ searchBar: UISearchBar) {
+        if !search.isActive || self.searchTextFild.text == "" {
+            search.searchBar.showsScopeBar = true
+            self.search.searchBar.sizeToFit()
         }
     }
     
-    @IBAction func btnTapEvents(_ sender: UIButton){
-        switch sender.tag {
-        case 0://Home
-            break
-        case 1://Events
-            self.pushOtherVC(ViewControllers.EventVC.getController())
-            break
-        case 2://Mmories
-            break
-        case 3://Gallery
-            break
-        case 4://Chat
-            break
-        default:
-            break
+    func searchBarCancelButtonClicked(_ searchBar: UISearchBar) {
+        search.searchBar.showsScopeBar = true
+        self.search.searchBar.sizeToFit()
+    }
+    
+    //ScopBar action here
+    func searchBar(_ searchBar: UISearchBar, selectedScopeButtonIndexDidChange selectedScope: Int) {
+        if selectedScope == 0{
+            if !self.search.isActive{
+                self.arrData = arrTemp
+            }else{
+                self.arrData = self.arrFilter
+            }
+            isSelectedAll = true
+        }else{
+            isSelectedAll = false
+            self.arrData = arrData.filter({ allData in
+                if allData.favourite == true{
+                    return true
+                }else{
+                    return false
+                }
+            })
         }
     }
     
-    func pushOtherVC(_ str: String){
-        let vc = MainClass.Home.instantiateViewController(withIdentifier: str)
-        self.navigationController?.pushViewController(vc, animated: false)
+    //Sorting
+    func reasonIs(_ name: String) {
+        if sortDefault != name{
+            if sortBy.DefaultUp.getOption() == name{
+                self.arrData.reverse()
+            }else if sortBy.Defaultdown.getOption() == name{
+                self.arrData.reverse()
+            }else if sortBy.AtoZ.getOption() == name{
+                self.arrData =  arrData.sorted { $0.name!.lowercased() < $1.name!.lowercased() }
+            }else if sortBy.ZtoA.getOption() == name{
+                self.arrData =  arrData.sorted { $0.name!.lowercased() > $1.name!.lowercased() }
+            }
+            self.sortDefault = name
+        }
     }
+    
+    
 }
-extension HomeVC: UICollectionViewDelegate, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout{
-    func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        return self.arrData.count
-    }
-    
-    func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
-        let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "cell", for: indexPath)
-        return cell
-    }
-    
-    func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
-        return CGSize(width: collectionView.bounds.width / 2 - 10, height: 230.0)
-    }
-    
-    func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, minimumLineSpacingForSectionAt section: Int) -> CGFloat {
-        return 15.0
-    }
-    
-    func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
-        let vc = MainClass.Classmates.instantiateViewController(withIdentifier: ViewControllers.ClassMateDetailVC.getController()) as! ClassMateDetailVC
-        self.navigationController?.pushViewController(vc, animated: false)
-    }
-}
+

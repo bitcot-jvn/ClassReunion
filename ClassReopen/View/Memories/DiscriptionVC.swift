@@ -9,13 +9,30 @@ import UIKit
 
 class DiscriptionVC: UIViewController {
 
+    @IBOutlet weak var tvDiscription: UITextView!
+    
+    var delegate: SelectReason?
+    var text: String?
+    
     override func viewDidLoad() {
         super.viewDidLoad()
 
+        self.tvDiscription.text = self.text
         // Do any additional setup after loading the view.
     }
     
 
+    @IBAction func btnCanselAction(_ sender: UIButton){
+        self.dismiss(animated: true) {
+            
+        }
+    }
+    
+    @IBAction func btnDoneAction(_ sender: UIButton){
+        self.dismiss(animated: true) {
+            self.delegate?.reasonIs(self.tvDiscription.text)
+        }
+    }
     /*
     // MARK: - Navigation
 

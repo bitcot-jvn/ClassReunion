@@ -9,6 +9,10 @@ import UIKit
 
 class CellSideMenu: UITableViewCell {
 
+    //MARK: Outlets
+    @IBOutlet weak var lblName: UILabel!
+    @IBOutlet weak var imgIcon: UIImageView!
+    
     override func awakeFromNib() {
         super.awakeFromNib()
         // Initialization code

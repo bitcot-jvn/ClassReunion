@@ -7,23 +7,56 @@
 
 import UIKit
 
-class RSVPedPreviewVC: UIViewController {
+class RSVPedPreviewVC: BaseViewController {
 
-    override func viewDidLoad() {
-        super.viewDidLoad()
-
-        // Do any additional setup after loading the view.
+    
+    //MARK: IBOutlet
+    @IBOutlet weak var lblResponse: UILabel!
+    
+    //MARK: Variables
+    typealias complitionHandler = (String) -> Void
+    
+    var handler: complitionHandler?
+    var eventName: String?
+    var data: RsvpModal?{
+        didSet{
+            DispatchQueue.main.async {
+                self.lblResponse.text = self.data?.rsponse
+            }
+        }
     }
     
-
-    /*
-    // MARK: - Navigation
-
-    // In a storyboard-based application, you will often want to do a little preparation before navigation
-    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
-        // Get the new view controller using segue.destination.
-        // Pass the selected object to the new view controller.
+    //MARK: Default function
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        self.navigationItem.title = eventName
+        self.navigationLargePreferStyle(false)
+        self.editRSVPed()
     }
-    */
+    
+    //MARK: functions
+    func editRSVPed(){
+        let right = UIBarButtonItem(image: UIImage(systemName: "pencil"), style: .done, target: self, action: #selector(EditBarAction))
+        self.navigationItem.rightBarButtonItem = right
+    }
+
+    @objc func EditBarAction(){
+        let vc = MainClass.Events.instantiateViewController(withIdentifier: ViewControllers.EditItemVC.getController()) as! EditItemVC
+        vc.isModalInPresentation = true
+        vc.delegate = self
+        vc.eventName = self.eventName
+        vc.data = self.data
+        self.present(vc, animated: true, completion: nil)
+    }
 
 }
+
+
+extension RSVPedPreviewVC: SelectReason{//delegate
+    func reasonIs(_ name: String) {
+        self.data?.rsponse = name
+        self.handler!(name)
+    }
+}
+    
+

@@ -17,13 +17,32 @@ class EnterPinVC: BaseViewController {
     //MARK: Variables
     var email: String!
     
+    //MARK: Default Function
     override func viewDidLoad() {
         super.viewDidLoad()
+        configureUI()
+        // Do any additional setup after loading the view.
+    }
+    
+    //MARK: Actions
+    @IBAction func btnSignInAction(_ sender: UIButton){
+        let vc = MainClass.Home.instantiateViewController(withIdentifier: ViewControllers.MainTabBarController.getController()) as! MainTabBarController
+        self.navigationController?.pushViewController(vc, animated: true)
+    }
+    
+    @IBAction func btnAnotherPinAction(_ sender: UIButton){
+        self.navigationController?.popViewController(animated: true)
+    }
+    
+    //MARK: Functions
+    fileprivate func configureUI() {
+        self.hideNavigationBar()
+        self.title = AppName.app
+        self.tfPin.text = "12345"
         self.lblDescription.text = "We've sent a pin to \(self.email ?? "nil")"
         self.btnSignIn.setTitleColor(#colorLiteral(red: 0.4941176471, green: 0.3647058824, blue: 0.168627451, alpha: 1) , for: .normal)
         self.btnSignIn.backgroundColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 0.4)
         self.tfPin.addTarget(self, action: #selector(self.textFieldDidChange(_:)), for: .editingChanged)
-        // Do any additional setup after loading the view.
     }
     
     @objc func textFieldDidChange(_ textField: UITextField) {
@@ -38,19 +57,9 @@ class EnterPinVC: BaseViewController {
             
         }
     }
-    
-    
-    //MARK: Actions
-    @IBAction func btnSignInAction(_ sender: UIButton){
-        let vc = MainClass.Home.instantiateViewController(withIdentifier: ViewControllers.HomeVC.getController()) as! HomeVC
-        self.navigationController?.pushViewController(vc, animated: true)
-    }
-    
-    @IBAction func btnAnotherPinAction(_ sender: UIButton){
-        self.navigationController?.popViewController(animated: true)
-    }
+   
 }
-
+//MARK: Delegate
 extension EnterPinVC{
     
     func textField(_ textField: UITextField, shouldChangeCharactersIn range: NSRange, replacementString string: String) -> Bool {

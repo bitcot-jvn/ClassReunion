@@ -7,23 +7,59 @@
 
 import UIKit
 
-class GalleryDetailsVC: UIViewController {
+class GalleryDetailsVC: BaseViewController {
 
-    override func viewDidLoad() {
-        super.viewDidLoad()
-
-        // Do any additional setup after loading the view.
+    //MARK: Outlets
+    @IBOutlet weak var page: UIPageControl!
+    
+    //MARK: Variables
+    var data: GalleryModal?{
+        didSet{
+            DispatchQueue.main.async {
+                
+            }
+        }
     }
     
-
-    /*
-    // MARK: - Navigation
-
-    // In a storyboard-based application, you will often want to do a little preparation before navigation
-    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
-        // Get the new view controller using segue.destination.
-        // Pass the selected object to the new view controller.
+    //MARK: Default function
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        configureUI()
     }
-    */
 
+    fileprivate func configureUI() {
+        if self.data?.imgEvent!.count ?? 0 > 1 {
+            self.page.numberOfPages = self.data?.imgEvent!.count ?? 0
+        }else{
+            self.page.isHidden = true
+        }
+        
+        self.navigationLargePreferStyle(false)
+        self.showNavigationBar()
+        self.navigationItem.title = self.data?.eventTitle
+    }
+    
 }
+
+//MARK: UICollectionViewDelegate, UICollectionViewDataSource
+extension GalleryDetailsVC:UICollectionViewDelegate, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout{
+    func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
+        return self.data?.imgEvent!.count ?? 0
+    }
+    
+    func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
+        let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "CellGalleryDetails", for: indexPath) as! CellGalleryDetails
+        cell.img.image = self.data?.imgEvent?[indexPath.row]
+        cell.lblTitile.text = self.data?.eventTitle
+        return cell
+    }
+    
+    func collectionView(_ collectionView: UICollectionView, willDisplay cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
+        self.page.currentPage = indexPath.row
+    }
+    
+    func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
+        return CGSize(width: collectionView.bounds.width, height: collectionView.bounds.height)
+    }
+}
+

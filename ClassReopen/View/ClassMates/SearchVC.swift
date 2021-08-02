@@ -8,6 +8,7 @@
 import UIKit
 
 class SearchVC: UIViewController {
+    
     typealias handler = (_ data:classMateModal, _ isFavourite: Bool) -> Void
     
    //MARK: Outlets
@@ -15,7 +16,6 @@ class SearchVC: UIViewController {
 
     //MARK: Variables
     var complitionHandler: handler?
-    
     var arrFilterData: [classMateModal] = []{
         didSet{
             if oldValue != arrFilterData{
@@ -25,14 +25,11 @@ class SearchVC: UIViewController {
             self.arrFilterData = new
         }
     }
-    
-    
+
     //MARK: Default function
     override func viewDidLoad() {
         super.viewDidLoad()
     }
-    
-
 }
 
 //MARK: UICollectionViewDelegate, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout
@@ -55,8 +52,7 @@ extension SearchVC: UICollectionViewDelegate, UICollectionViewDataSource, UIColl
                 }else{
                     self.arrFilterData[indexPath.row].favourite = false
                 }
-            
-            complitionHandler!(self.arrFilterData[indexPath.row], true)
+            self.complitionHandler!(self.arrFilterData[indexPath.row], true)
         }
         return cell
     }

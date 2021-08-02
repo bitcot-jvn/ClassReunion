@@ -6,17 +6,21 @@
 //
 
 import UIKit
+import GoogleSignIn
 
 class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
     var window: UIWindow?
+    var signInConfig: GIDConfiguration?
+    var navController = UINavigationController()
 
-
+   
+    
     func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
-        // Use this method to optionally configure and attach the UIWindow `window` to the provided UIWindowScene `scene`.
-        // If using a storyboard, the `window` property will automatically be initialized and attached to the scene.
-        // This delegate does not imply the connecting scene or session are new (see `application:configurationForConnectingSceneSession` instead).
         guard let _ = (scene as? UIWindowScene) else { return }
+        window?.backgroundColor = .white
+        self.signInConfig = GIDConfiguration(clientID: SocialKeys.googleClintID)
+        self.ConfigureUI()
     }
 
     func sceneDidDisconnect(_ scene: UIScene) {
@@ -53,3 +57,17 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
 }
 
+extension SceneDelegate{
+    fileprivate func ConfigureUI() {
+        if SharedPreference.getUserData().userID != nil{
+            let tabBarController  = MainClass.Home.instantiateViewController(withIdentifier: ViewControllers.MainTabBarController.getController()) as! MainTabBarController
+            self.window!.rootViewController = tabBarController
+            self.window!.makeKeyAndVisible()
+        }else{
+            let vc  = MainClass.main.instantiateViewController(withIdentifier: ViewControllers.LogInVC.getController()) as! LogInVC
+            let nav = UINavigationController(rootViewController: vc)
+            self.window!.rootViewController = nav
+            self.window!.makeKeyAndVisible()
+        }
+    }
+}

@@ -1,0 +1,6 @@
+framework module Pods_ClassReopen {
+  umbrella header "Pods-ClassReopen-umbrella.h"
+
+  export *
+  module * { export * }
+}

@@ -7,18 +7,43 @@
 
 import UIKit
 import CoreData
+import IQKeyboardManagerSwift
+import GoogleSignIn
 
 @main
 class AppDelegate: UIResponder, UIApplicationDelegate {
 
-
-
+    var window: UIWindow?
+   
+  
+    
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        // Override point for customization after application launch.
+        IQKeyboardManager.shared.enable = true
+        self.window = UIWindow(frame: UIScreen.main.bounds)
+       
+        UINavigationBar.appearance().barTintColor = #colorLiteral(red: 0.8274509804, green: 0.6156862745, blue: 0.2823529412, alpha: 1)
+        UINavigationBar.appearance().tintColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 1)
+        UINavigationBar.appearance().titleTextAttributes = [NSAttributedString.Key.foregroundColor:UIColor.white]
+        UINavigationBar.appearance().shadowImage = UIImage()
+        UINavigationBar.appearance().isTranslucent = false
         return true
+        // Override point for customization after application launch.
     }
 
-    // MARK: UISceneSession Lifecycle
+    func application(
+      _ app: UIApplication,
+      open url: URL, options: [UIApplication.OpenURLOptionsKey : Any] = [:]
+    ) -> Bool {
+      var handled: Bool
+      handled = GIDSignIn.sharedInstance.handle(url)
+      if handled {
+        return true
+      }
+      // Handle other custom URL types.
+
+      // If not handled by this app, return false.
+      return false
+    }
 
     func application(_ application: UIApplication, configurationForConnecting connectingSceneSession: UISceneSession, options: UIScene.ConnectionOptions) -> UISceneConfiguration {
         // Called when a new scene session is being created.

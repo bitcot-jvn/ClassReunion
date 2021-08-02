@@ -6,30 +6,58 @@
 //
 
 import UIKit
+import SideMenu
+import SafariServices
+import GoogleSignIn
 
-class BaseViewController: UIViewController, UITextFieldDelegate {
+class BaseViewController: UIViewController,UITextFieldDelegate {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-
+        if self.navigationController != nil{
+            SceneClass.mySceneDelegate?.navController = self.navigationController!
+        }
     }
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-//        self.navigationController?.navigationBar.backItem?.title = "Back"
+        
+        //UINavigationController().setupNavigationPreference()
+        
+    }
+    
+    //MARK: setup side menu
+    func showMenu(){
+        let vc = MainClass.main.instantiateViewController(withIdentifier: "SideMenuVC")
+        let menu = SideMenuNavigationController(rootViewController: vc)
+        menu.menuWidth = self.view.bounds.width - 60.0
+        menu.leftSide = true
+        menu.presentationStyle = .menuSlideIn
+        present(menu, animated: true, completion: nil)
+    }
+    
+    func setupSideMenu() {
+       // Define the menus
+        let vc = MainClass.main.instantiateViewController(withIdentifier: "SideMenuVC")
+        let leftMenuNavigationController = SideMenuNavigationController(rootViewController:  vc)
+        leftMenuNavigationController.menuWidth = self.view.bounds.width - 60.0
+        leftMenuNavigationController.presentationStyle = .menuSlideIn
+        SideMenuManager.default.leftMenuNavigationController = leftMenuNavigationController
+        SideMenuManager.default.addPanGestureToPresent(toView: self.navigationController!.navigationBar)
+        leftMenuNavigationController.statusBarEndAlpha = 0
+   }
+    
+    
+   
+
+    //MARK: navigation bar
+    func showNavigationBar(){
+        self.navigationController?.isNavigationBarHidden = false
+        self.navigationController?.view.backgroundColor = #colorLiteral(red: 0.8274509804, green: 0.6156862745, blue: 0.2823529412, alpha: 1)
     }
     
     func hideNavigationBar(){
         self.navigationController?.isNavigationBarHidden = true
-    }
-    
-    
-
-    func showNavigationBar(){
-        self.navigationController?.isNavigationBarHidden = false
-        self.navigationController?.navigationBar.shadowImage = UIImage()
-        self.navigationController?.navigationBar.isTranslucent = false
-        self.navigationController?.view.backgroundColor = #colorLiteral(red: 0.8274509804, green: 0.6156862745, blue: 0.2823529412, alpha: 1)
     }
     
     func navigationLargePreferStyle(_ show: Bool){
@@ -37,44 +65,129 @@ class BaseViewController: UIViewController, UITextFieldDelegate {
     }
 
     func setRightAndLeftBarButton(leftButton: Bool, rightButton: Bool){
-        
         let left = UIBarButtonItem(image: UIImage(systemName: "text.justify"), style: .done, target: self, action: #selector(leftBarAction))
         self.navigationItem.leftBarButtonItem = left
-        let right = UIBarButtonItem(image: #imageLiteral(resourceName: "filter"), style: .done, target: self, action: #selector(rightBarAction))
-        if leftButton && !rightButton{
-            self.navigationItem.leftBarButtonItem = left
-        }else if leftButton && rightButton{
-            self.navigationItem.rightBarButtonItem = right
-            self.navigationItem.leftBarButtonItem = left
-        }
-    }
-    
-    func addMemories(){
-        let right = UIBarButtonItem(image: UIImage(systemName: "plus"), style: .done, target: self, action: #selector(addmemoriesAction))
-        self.navigationItem.rightBarButtonItem = right
+        self.navigationItem.leftBarButtonItem = left
     }
     
     func sortAction(){
-        let right = UIBarButtonItem(image: #imageLiteral(resourceName: "filter"), style: .done, target: self, action: #selector(rightBarAction))
-        self.navigationItem.rightBarButtonItem = right
+
     }
     
     @objc func leftBarAction(){
-        print("click left")
+        self.showMenu()
+    
+    }
+
+    //MARK: genrate qrCode
+    
+    func generateQRCode(from string: String) -> UIImage? {
+        let data = string.data(using: String.Encoding.ascii)
+
+        if let filter = CIFilter(name: "CIQRCodeGenerator") {
+            filter.setValue(data, forKey: "inputMessage")
+            let transform = CGAffineTransform(scaleX: 3, y: 3)
+
+            if let output = filter.outputImage?.transformed(by: transform) {
+                return UIImage(ciImage: output)
+            }
+        }
+
+        return nil
     }
     
-    @objc func rightBarAction(){
-        print("click Right")
+    //MARK: hide sshow animation view
+    func setView(view: UIView, hidden: Bool) {
+        UIView.transition(with: view, duration: 0.5, options: .transitionCrossDissolve, animations: {
+            view.isHidden = hidden
+        })
     }
     
-    @objc func addmemoriesAction(){
-        print("click Right")
+    //MARK: alertView
+    func showAnouncement(message: String,yesTitle: String, noTitle: String, complition: @escaping (UIAlertAction) -> Void){
+        let alert = UIAlertController(title: AppName.app, message: message, preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: yesTitle, style: .default, handler: { alert in
+            complition(alert)
+        }))
+        
+        alert.addAction(UIAlertAction(title: noTitle, style: .cancel,handler: nil))
+        self.present(alert, animated: true)
+    }
+    
+    func showAnouncementOk(message: String,Ok: String, complition: @escaping (UIAlertAction) -> Void){
+        let alert = UIAlertController(title: AppName.app, message: message, preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: Ok, style: .default, handler: { alert in
+            complition(alert)
+        }))
+        self.present(alert, animated: true)
+    }
+    
+    func openServices(urlStr: String, data: String){
+        if let phoneCallURL = URL(string: "\(urlStr)\(data)") {
+           let application:UIApplication = UIApplication.shared
+           if (application.canOpenURL(phoneCallURL)) {
+               application.open(phoneCallURL, options: [:], completionHandler: nil)
+           }
+         }
     }
 }
 
 
+extension BaseViewController{
+    func selectedOptionSetup(_ index: Int){
+        switch index {
+        case 0://company
+            self.openUrl(URL(string: baseUrl.company)!)
+            break
+        case 1://privacy
+            self.openUrl(URL(string: baseUrl.privacy)!)
+            break
+        case 2://about
+            self.openUrl(URL(string: baseUrl.aboutUs)!)
+            
+            break
+        case 3://sign out
+            self.showAnouncement(message: UseCaseMessage.alertMessage.Logout, yesTitle: UseCaseMessage.Title.yes, noTitle: UseCaseMessage.Title.No, complition: { [self]_ in
+                self.dismiss(animated: false, completion: nil)
+                if SharedPreference.getUserData().userID != nil{
+                    GIDSignIn.sharedInstance.signOut()
+                }
+                logout()
+            })
+            break
+        default:
+            break
+        }
+    }
+    
+    func logout(){
+        SharedPreference.clearUserData()
+        let vc  = MainClass.main.instantiateViewController(withIdentifier: ViewControllers.LogInVC.getController()) as! LogInVC
+        let nav = UINavigationController(rootViewController: vc)
+        SceneClass.mySceneDelegate?.window!.rootViewController = nav
+      //  SceneClass.mySceneDelegate?.window!.makeKeyAndVisible()
+    }
+    
+    func openUrl(_ url: URL){
+        let svc = SFSafariViewController(url: url)
+        svc.modalPresentationStyle = .popover
+        present(svc, animated: true, completion: nil)
+    }
+}
+
 extension UINavigationController{
-    func setUpPreference(){
-        
+    func setupNavigationPreference(){
+      
+     
+    }
+    
+    func popToViewController(ofClass: AnyClass, animated: Bool = true) {
+       if let vc = viewControllers.last(where: { $0.isKind(of: ofClass) }) {
+         popToViewController(vc, animated: animated)
+       }
+     }
+    
+    open override var preferredStatusBarStyle: UIStatusBarStyle {
+        return .lightContent
     }
 }

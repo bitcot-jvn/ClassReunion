@@ -6,3 +6,8 @@
 //
 
 import Foundation
+
+
+protocol SelectReason {
+    func reasonIs(_ name: String)
+}

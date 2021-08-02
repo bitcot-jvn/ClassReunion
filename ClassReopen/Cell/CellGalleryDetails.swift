@@ -9,4 +9,8 @@ import UIKit
 
 class CellGalleryDetails: UICollectionViewCell {
     
+    @IBOutlet weak var img: UIImageView!
+    @IBOutlet weak var lblTitile: UILabel!
+    
+    
 }
